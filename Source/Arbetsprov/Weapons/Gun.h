@@ -13,7 +13,7 @@ class ARBETSPROV_API AGun : public AActor
 	GENERATED_BODY()
 	
 public:
-	// Constructor
+	/** Using FObjectInitializer form of construction because no-argument constructor leads to multiple default constructors for inheriting classes */
 	AGun(const FObjectInitializer& ObjectInitializer);
 
 	/** Method representing the primary action of the gun e.g. shooting a bullet. */
