@@ -26,3 +26,23 @@ void AGun::SecondaryAction()
 		UGameplayStatics::PlaySoundAtLocation(this, SecondaryActionSound, GetActorLocation());
 	}
 }
+
+FVector AGun::GetMuzzleLocation() const 
+{
+	if(WeaponMesh)
+	{
+		return WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
+	}
+
+	return FVector::ZeroVector;
+}
+
+FRotator AGun::GetMuzzleRotation() const
+{
+	if (WeaponMesh)
+	{
+		return WeaponMesh->GetSocketRotation(TEXT("Muzzle"));
+	}
+
+	return FRotator::ZeroRotator;
+}

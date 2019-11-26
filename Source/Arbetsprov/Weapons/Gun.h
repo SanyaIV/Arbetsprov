@@ -23,6 +23,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Actions")
 	virtual void SecondaryAction();
 
+protected:
+	UFUNCTION(BlueprintCallable, Category = "Muzzle")
+	FVector GetMuzzleLocation() const;
+	UFUNCTION(BlueprintCallable, Category = "Muzzle")
+	FRotator GetMuzzleRotation() const;
+
 private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "Mesh")
 	USkeletalMeshComponent* WeaponMesh = nullptr;
