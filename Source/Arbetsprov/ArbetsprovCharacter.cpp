@@ -49,6 +49,7 @@ void AArbetsprovCharacter::BeginPlay()
 	if(FP_Gun)
 	{
 		FP_Gun->AttachToComponent(FP_Arms, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GripPoint"));
+		FP_Gun->SetOwner(this);
 	}
 }
 

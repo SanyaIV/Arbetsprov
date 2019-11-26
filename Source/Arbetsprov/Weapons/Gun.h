@@ -24,8 +24,26 @@ public:
 	virtual void SecondaryAction();
 
 protected:
+	/**
+	* Attempts to find the location and direction that the player is looking based on which pawn owns the weapon.
+	* @param WorldLocation - Location in the world that the center of the player's viewport is.
+	* @param WorldDirection - Direction in the world that the center of the player's viewport is looking.
+	* @return Whether or not it was successful in finding a location and direction.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "Viewport")
+	bool GetPlayerLookLocationAndDirection(FVector& WorldLocation, FVector& WorldDirection) const;
+
+	/**
+	* Gets the location of the muzzle on the gun in world space.
+	* @return The location of the muzzle on the gun in world space.
+	*/
 	UFUNCTION(BlueprintCallable, Category = "Muzzle")
 	FVector GetMuzzleLocation() const;
+
+	/**
+	* Gets the rotation of the muzzle on the gun in world space.
+	* @return The location of the muzzle on the gun in world space.
+	*/
 	UFUNCTION(BlueprintCallable, Category = "Muzzle")
 	FRotator GetMuzzleRotation() const;
 

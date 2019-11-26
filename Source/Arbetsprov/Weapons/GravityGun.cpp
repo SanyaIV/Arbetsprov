@@ -5,7 +5,10 @@
 #include "Components/PrimitiveComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
 #include "PhysicsEngine/PhysicsHandleComponent.h"
+#include "DrawDebugHelpers.h"
 
 AGravityGun::AGravityGun(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -48,10 +51,27 @@ FVector AGravityGun::GetGravityCenter() const
 
 bool AGravityGun::FindFirstObjectInReach(FHitResult& Hit) const
 {
+	FVector Location, Direction;
+	bool bSuccess = GetPlayerLookLocationAndDirection(Location, Direction);
+
+	if(!bSuccess)
+	{
+		Location = GetGravityCenter();
+		Direction = GetMuzzleRotation().Vector();
+	}
+
+	DrawDebugLine(
+		GetWorld(),
+		Location,
+		Location + Direction * MaxReachDistance,
+		FColor::Red,
+		true
+	);
+
 	return GetWorld()->LineTraceSingleByChannel(
 		Hit,
-		GetGravityCenter(),
-		GetGravityCenter() + GetMuzzleRotation().Vector() * MaxReachDistance,
+		Location,
+		Location + Direction * MaxReachDistance,
 		ECollisionChannel::ECC_Visibility,
 		FCollisionQueryParams(FName(TEXT("")), false, GetOwner())
 	);
@@ -85,8 +105,7 @@ void AGravityGun::Push() const
 	if (bHitSomething && Hit.GetComponent() && Hit.GetComponent()->IsSimulatingPhysics())
 	{
 		float Distance = FVector::Distance(GetGravityCenter(), Hit.Location);
-		float PushForce = FMath::Lerp(0.f, MaxPushForce, (MaxReachDistance - Distance) / MaxReachDistance);
-		UE_LOG(LogTemp, Warning, TEXT("%f"), PushForce)
+		float PushForce = FMath::Lerp(MinPushForce, MaxPushForce, (MaxReachDistance - Distance) / MaxReachDistance);
 		Hit.GetComponent()->AddImpulseAtLocation(GetMuzzleRotation().Vector() * PushForce, Hit.Location);
 	}
 }
@@ -96,6 +115,10 @@ void AGravityGun::PullIfGrabbing() const
 	if (!PhysicsHandle) return;
 	if (PhysicsHandle->GetGrabbedComponent())
 	{
+		float Distance = FVector::Distance(GetGravityCenter(), PhysicsHandle->GetGrabbedComponent()->GetComponentLocation());
+		float PullSpeed = FMath::Lerp(MinPullSpeed, MaxPullSpeed, (MaxReachDistance - Distance) / MaxReachDistance);
+		PhysicsHandle->SetInterpolationSpeed(PullSpeed);
+
 		float ComponentRadius = PhysicsHandle->GetGrabbedComponent()->Bounds.SphereRadius;
 		PhysicsHandle->SetTargetLocation(GetGravityCenter() + GetMuzzleRotation().Vector() * ComponentRadius);
 	}

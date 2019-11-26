@@ -27,6 +27,19 @@ void AGun::SecondaryAction()
 	}
 }
 
+bool AGun::GetPlayerLookLocationAndDirection(FVector& WorldLocation, FVector& WorldDirection) const
+{
+	APawn* Pawn = Cast<APawn>(GetOwner());
+	if (!Pawn) return false;
+
+	APlayerController* Controller = Cast<APlayerController>(Pawn->GetController());
+	if (!Controller) return false;
+
+	int32 ViewportSizeX, ViewportSizeY;
+	Controller->GetViewportSize(ViewportSizeX, ViewportSizeY);
+	return Controller->DeprojectScreenPositionToWorld(ViewportSizeX * 0.5f, ViewportSizeY * 0.5f, WorldLocation, WorldDirection);
+}
+
 FVector AGun::GetMuzzleLocation() const 
 {
 	if(WeaponMesh)
