@@ -197,6 +197,7 @@ bool AGravityGun::PullGrabbedObject()
 			static constexpr float DISTANCE_TO_STOP_INTERPOLATION = 5.f;
 			if (Distance < DISTANCE_TO_STOP_INTERPOLATION)
 			{
+				// Turn off interpolation when the object is near the gravity center, purpose is to lower the amount it lags behind when moving.
 				PhysicsHandle->bInterpolateTarget = false;
 				bGrabbedObjectAtGravityCenter = true;
 			}
