@@ -8,7 +8,6 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "PhysicsEngine/PhysicsHandleComponent.h"
-#include "DrawDebugHelpers.h"
 
 AGravityGun::AGravityGun(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -19,15 +18,15 @@ AGravityGun::AGravityGun(const FObjectInitializer& ObjectInitializer) : Super(Ob
 
 void AGravityGun::Tick(float DeltaTime)
 {
-	PullIfGrabbing();
+	PullGrabbedObject();
 }
 
 void AGravityGun::PrimaryAction()
 {
 	Super::PrimaryAction();
 
-	Release();
-	Push();
+	ReleaseGrabbedObject();
+	PushObject();
 }
 
 void AGravityGun::SecondaryAction()
@@ -36,11 +35,11 @@ void AGravityGun::SecondaryAction()
 
 	if(!PhysicsHandle->GetGrabbedComponent())
 	{
-		Grab();
+		GrabObject();
 	}
 	else
 	{
-		Release();
+		ReleaseGrabbedObject();
 	}
 }
 
@@ -49,24 +48,18 @@ FVector AGravityGun::GetGravityCenter() const
 	return GetMuzzleLocation() + GetMuzzleRotation().Vector() * MuzzleOffset;
 }
 
-bool AGravityGun::FindFirstObjectInReach(FHitResult& Hit) const
+bool AGravityGun::FindClosestObjectInReach(FHitResult& Hit) const
 {
 	FVector Location, Direction;
 	bool bSuccess = GetPlayerLookLocationAndDirection(Location, Direction);
 
+	// Fall back to using the Gun's POV for lince trace if we can't find the Player's POV.
+	// Player's POV is prefered since the Gun might be angled away from the center slightly.
 	if(!bSuccess)
 	{
 		Location = GetGravityCenter();
 		Direction = GetMuzzleRotation().Vector();
 	}
-
-	DrawDebugLine(
-		GetWorld(),
-		Location,
-		Location + Direction * MaxReachDistance,
-		FColor::Red,
-		true
-	);
 
 	return GetWorld()->LineTraceSingleByChannel(
 		Hit,
@@ -77,10 +70,10 @@ bool AGravityGun::FindFirstObjectInReach(FHitResult& Hit) const
 	);
 }
 
-void AGravityGun::Grab() const
+void AGravityGun::GrabObject() const
 {
 	FHitResult Hit;
-	bool bHitSomething = FindFirstObjectInReach(Hit);
+	bool bHitSomething = FindClosestObjectInReach(Hit);
 
 	if (bHitSomething && PhysicsHandle && Hit.GetComponent() && Hit.GetComponent()->IsSimulatingPhysics())
 	{
@@ -92,15 +85,15 @@ void AGravityGun::Grab() const
 	}
 }
 
-void AGravityGun::Release() const 
+void AGravityGun::ReleaseGrabbedObject() const 
 {
 	PhysicsHandle->ReleaseComponent();
 }
 
-void AGravityGun::Push() const 
+void AGravityGun::PushObject() const 
 {
 	FHitResult Hit;
-	bool bHitSomething = FindFirstObjectInReach(Hit);
+	bool bHitSomething = FindClosestObjectInReach(Hit);
 
 	if (bHitSomething && Hit.GetComponent() && Hit.GetComponent()->IsSimulatingPhysics())
 	{
@@ -110,7 +103,7 @@ void AGravityGun::Push() const
 	}
 }
 
-void AGravityGun::PullIfGrabbing() const
+void AGravityGun::PullGrabbedObject() const
 {
 	if (!PhysicsHandle) return;
 	if (PhysicsHandle->GetGrabbedComponent())

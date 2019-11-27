@@ -7,7 +7,7 @@
 #include "GravityGun.generated.h"
 
 /**
- * Representa a Gravity Gun, based on the Gun class.
+ * Representa a Gravity Gun, inheriting from the Gun class.
  */
 UCLASS()
 class ARBETSPROV_API AGravityGun : public AGun
@@ -28,33 +28,36 @@ public:
 	virtual void SecondaryAction() override;
 
 private:
-	/** Returns the location of the muzzle + offset in its forward direction */
+	/** 
+	* The location of the muzzle with applied offset in the gun's forward direction.
+	* @return The location of the muzzle with applied offset in the gun's forward direction.
+	*/
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	FVector GetGravityCenter() const;
 
 	/**
-	* Linetrace to find the first visible object.
-	* @param Hit - Upon return will contain the Hit result of the linetrace.
+	* Linetrace to find the closest visible object in line-of-sight.
+	* @param Hit - Upon return will contain the result of the linetrace.
 	* @return Whether something was hit by the linetrace or not.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	bool FindFirstObjectInReach(FHitResult& Hit) const;
+	bool FindClosestObjectInReach(FHitResult& Hit) const;
 
 	/** Grab the closest object. */
 	UFUNCTION(BlueprintCallable, Category = "Action")
-	void Grab() const;
+	void GrabObject() const;
 
 	/** Release any grabbed object */
 	UFUNCTION(BlueprintCallable, Category = "Action")
-	void Release() const;
+	void ReleaseGrabbedObject() const;
 
 	/** Push the closest object. */
 	UFUNCTION(BlueprintCallable, Category = "Action")
-	void Push() const;
+	void PushObject() const;
 
 	/** Pull any grabbed object towards the gravity center of the gravity gun, offsetting for object radius. */
 	UFUNCTION(BlueprintCallable, Category = "Action")
-	void PullIfGrabbing() const;
+	void PullGrabbedObject() const;
 
 	/** Physics Handle Component handles most of the grabbing/pulling functionality of the gravity gun. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Physics Handle", meta = (AllowPrivateAccess = "True"))
