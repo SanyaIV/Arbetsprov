@@ -19,6 +19,15 @@ public:
 	/** Tick function. */
 	virtual void Tick(float DeltaTime) override;
 
+	/**
+	 * Linetrace from the center of the screen and forwards in the camera direction.
+	 * @param OutHit - Reference to a FHitResult which will contain the results of the linetrace.
+	 * @param DistanceToCheck - The length of the linetrace.
+	 * @param TraceChannel - The channel to check.
+	 * @return Whether or not something was hit by the linetrace.
+	 */
+	bool LineTraceSingleByChannelFromEyes(FHitResult& OutHit, float DistanceToCheck, ECollisionChannel TraceChannel) const;
+
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	float BaseTurnRate;
@@ -44,6 +53,18 @@ protected:
 
 	/** Triggers secondary action for the weapon. */
 	void OnWeaponSecondary();
+
+	/** Linetrace and pick up gun if one is found. */
+	void PickUpGun();
+
+	/**
+	 * Picks up gun.
+	 * @param Gun - The gun to pick up.
+	 */
+	void PickUpGun(class AGun* Gun);
+
+	/** Drops currently held gun. */
+	void DropGun();
 
 	/** Handles moving forward/backward */
 	void MoveForward(float Val);
@@ -80,7 +101,13 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess = "True"))
 	class AGun* FP_Gun = nullptr;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
+	float PickUpDistance = 200.f;
+
 	UPROPERTY()
 	class AArbetsprovHUD* FP_HUD = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "HUD")
+	FLinearColor DefaultCrosshairColor = FLinearColor::White;
 };
 

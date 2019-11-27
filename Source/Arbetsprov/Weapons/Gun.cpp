@@ -3,36 +3,48 @@
 
 #include "Gun.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Kismet/GameplayStatics.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 
 AGun::AGun(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon Mesh"));
-	SetRootComponent(WeaponMesh);
+	GunMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon Mesh"));
+	SetRootComponent(GunMesh);
 }
 
-void AGun::PrimaryAction()
+bool AGun::PrimaryAction()
 {
-	if (PrimaryActionSound != nullptr)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, PrimaryActionSound, GetActorLocation());
-	}
+	return false;
 }
 
-void AGun::SecondaryAction()
+bool AGun::SecondaryAction()
 {
-	if (SecondaryActionSound != nullptr)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, SecondaryActionSound, GetActorLocation());
-	}
+	return false;
+}
+
+AGun* AGun::PickUp(AActor* NewOwner)
+{
+	GunMesh->SetSimulatePhysics(false);
+	SetOwner(NewOwner);
+	SetGunState(EGunState::NoTarget);
+
+	return this;
+}
+
+void AGun::Drop()
+{
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	SetOwner(nullptr);
+	GunMesh->SetSimulatePhysics(true);
+	SetGunState(EGunState::Dropped);
 }
 
 bool AGun::GetPlayerLookLocationAndDirection(FVector& WorldLocation, FVector& WorldDirection) const
 {
-	APawn* Pawn = Cast<APawn>(GetOwner());
+	const APawn* Pawn = Cast<APawn>(GetOwner());
 	if (!Pawn) return false;
 
-	APlayerController* Controller = Cast<APlayerController>(Pawn->GetController());
+	const APlayerController* Controller = Cast<APlayerController>(Pawn->GetController());
 	if (!Controller) return false;
 
 	int32 ViewportSizeX, ViewportSizeY;
@@ -42,9 +54,9 @@ bool AGun::GetPlayerLookLocationAndDirection(FVector& WorldLocation, FVector& Wo
 
 FVector AGun::GetMuzzleLocation() const 
 {
-	if(WeaponMesh)
+	if(GunMesh)
 	{
-		return WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
+		return GunMesh->GetSocketLocation(TEXT("Muzzle"));
 	}
 
 	return FVector::ZeroVector;
@@ -52,9 +64,9 @@ FVector AGun::GetMuzzleLocation() const
 
 FRotator AGun::GetMuzzleRotation() const
 {
-	if (WeaponMesh)
+	if (GunMesh)
 	{
-		return WeaponMesh->GetSocketRotation(TEXT("Muzzle"));
+		return GunMesh->GetSocketRotation(TEXT("Muzzle"));
 	}
 
 	return FRotator::ZeroRotator;
@@ -74,3 +86,4 @@ FLinearColor AGun::GetCrosshairColor() const
 {
 	return CrosshairColorsByState.FindRef(GunState);
 }
+

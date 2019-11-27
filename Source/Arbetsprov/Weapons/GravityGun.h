@@ -21,43 +21,64 @@ public:
 	/** Tick function */
 	virtual void Tick(float DeltaTime) override;
 
-	/** Beam attack that pushes objects. Calls Super first. */
-	virtual void PrimaryAction() override;
+	/** Beam attack that pushes objects. */
+	virtual bool PrimaryAction() override;
 
-	/** Pulls objects to the gravity gun. Calls Super first. */
-	virtual void SecondaryAction() override;
+	/** Pulls objects to the gravity gun. */
+	virtual bool SecondaryAction() override;
 
 private:
 	/** 
-	* The location of the muzzle with applied offset in the gun's forward direction.
-	* @return The location of the muzzle with applied offset in the gun's forward direction.
-	*/
+	 * The location of the center of the gravity effect and its direction.
+	 * First tries to get based on Player's POV and falls back to Gun's POV.
+	 * @param Center - The location of the center of the gravity effect.
+	 * @param Direction - The direction in which the gravity effect is facing.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	FVector GetGravityCenter() const;
+	void GetGravityCenterAndDirection(FVector& Center, FVector& Direction) const;
 
 	/**
-	* Linetrace to find the closest visible object in line-of-sight.
-	* @param Hit - Upon return will contain the result of the linetrace.
-	* @return Whether something was hit by the linetrace or not.
-	*/
+	 * Linetrace to find the closest visible object in line-of-sight.
+	 * @param Hit - Upon return will contain the result of the linetrace.
+	 * @return Whether something was hit by the linetrace or not.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	bool FindClosestObjectInReach(FHitResult& Hit) const;
 
-	/** Grab the closest object. */
+	/**
+	 * Grab the closest object.
+	 * @return Whether or not an object was grabbed.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Action")
-	void GrabObject() const;
+	bool GrabObject() const;
 
-	/** Release any grabbed object */
+	/** 
+	 * Release any grabbed object
+	 * @return Whether or not a grabbed object was released.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Action")
-	void ReleaseGrabbedObject() const;
+	bool ReleaseGrabbedObject();
 
-	/** Push the closest object. */
+	/**
+	 * Push the closest object.
+	 * @return Whether or not an object was pushed.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Action")
-	void PushObject() const;
+	bool PushObject() const;
 
-	/** Pull any grabbed object towards the gravity center of the gravity gun, offsetting for object radius. */
+	/**
+	 * Push the grabbed object.
+	 * @return Whether or not a grabbed object was pushed.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Action")
-	void PullGrabbedObject() const;
+	bool PushGrabbedObject();
+
+	/**
+	 * Pull any grabbed object towards the gravity center of the gravity gun, offsetting for object radius.
+	 * @return Whether or not a grabbed object was pulled.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Action")
+	bool PullGrabbedObject();
 
 	/** Physics Handle Component handles most of the grabbing/pulling functionality of the gravity gun. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Physics Handle", meta = (AllowPrivateAccess = "True"))
@@ -74,6 +95,18 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
 	float MaxPullSpeed = 15.f;
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
+	float PlayerMuzzleOffset = 100.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Setup")
 	float MuzzleOffset = 50.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Audio")
+	USoundBase* PushSound;
+	UPROPERTY(EditDefaultsOnly, Category = "Audio")
+	USoundBase* GrabSound;
+	UPROPERTY(EditDefaultsOnly, Category = "Audio")
+	USoundBase* ReleaseSound;
+	UPROPERTY(EditDefaultsOnly, Category = "Audio")
+	USoundBase* NoTargetSound;
+
+	bool bGrabbedObjectAtGravityCenter = false;
 };

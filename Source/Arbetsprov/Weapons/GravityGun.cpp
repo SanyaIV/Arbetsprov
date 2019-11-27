@@ -5,8 +5,7 @@
 #include "Components/PrimitiveComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
-#include "GameFramework/PlayerController.h"
-#include "GameFramework/Pawn.h"
+#include "Kismet/GameplayStatics.h"
 #include "PhysicsEngine/PhysicsHandleComponent.h"
 
 AGravityGun::AGravityGun(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -31,45 +30,75 @@ void AGravityGun::Tick(float DeltaTime)
 	PullGrabbedObject();
 }
 
-void AGravityGun::PrimaryAction()
+bool AGravityGun::PrimaryAction()
 {
-	Super::PrimaryAction();
+	bool bPushSuccess = PushGrabbedObject();
+	if(!bPushSuccess)
+	{
+		bPushSuccess = PushObject();
+	}
 
-	ReleaseGrabbedObject();
-	PushObject();
+	if (bPushSuccess && PushSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, PushSound, GetMuzzleLocation());
+	}
+	else if (NoTargetSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, NoTargetSound, GetMuzzleLocation());
+	}
+	
+	return bPushSuccess;
 }
 
-void AGravityGun::SecondaryAction()
+bool AGravityGun::SecondaryAction()
 {
-	Super::SecondaryAction();
-
-	if(!PhysicsHandle->GetGrabbedComponent())
+	bool bSuccess = false;
+	if (!PhysicsHandle->GetGrabbedComponent())
 	{
-		GrabObject();
+		bSuccess = GrabObject();
+
+		if (bSuccess && GrabSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, GrabSound, GetMuzzleLocation());
+		}
 	}
 	else
 	{
-		ReleaseGrabbedObject();
+		bSuccess = ReleaseGrabbedObject();
+
+		if (bSuccess && ReleaseSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, ReleaseSound, GetMuzzleLocation());
+		}
 	}
+
+	if (!bSuccess && NoTargetSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, NoTargetSound, GetMuzzleLocation());
+	}
+
+	return bSuccess;
 }
 
-FVector AGravityGun::GetGravityCenter() const 
+void AGravityGun::GetGravityCenterAndDirection(FVector& Center, FVector& Direction) const
 {
-	return GetMuzzleLocation() + GetMuzzleRotation().Vector() * MuzzleOffset;
+	const bool bSuccess = GetPlayerLookLocationAndDirection(Center, Direction);
+
+	if(bSuccess)
+	{
+		Center += Direction * PlayerMuzzleOffset;
+	}
+	else
+	{
+		Center = GetMuzzleLocation() + GetMuzzleRotation().Vector() * MuzzleOffset;
+		Direction = GetMuzzleRotation().Vector();
+	}
 }
 
 bool AGravityGun::FindClosestObjectInReach(FHitResult& Hit) const
 {
 	FVector Location, Direction;
-	bool bSuccess = GetPlayerLookLocationAndDirection(Location, Direction);
-
-	// Fall back to using the Gun's POV for lince trace if we can't find the Player's POV.
-	// Player's POV is prefered since the Gun might be angled away from the center slightly.
-	if(!bSuccess)
-	{
-		Location = GetGravityCenter();
-		Direction = GetMuzzleRotation().Vector();
-	}
+	GetGravityCenterAndDirection(Location, Direction);
 
 	return GetWorld()->LineTraceSingleByChannel(
 		Hit,
@@ -80,10 +109,10 @@ bool AGravityGun::FindClosestObjectInReach(FHitResult& Hit) const
 	);
 }
 
-void AGravityGun::GrabObject() const
+bool AGravityGun::GrabObject() const
 {
 	FHitResult Hit;
-	bool bHitSomething = FindClosestObjectInReach(Hit);
+	const bool bHitSomething = FindClosestObjectInReach(Hit);
 
 	if (bHitSomething && PhysicsHandle && Hit.GetComponent() && Hit.GetComponent()->IsSimulatingPhysics())
 	{
@@ -92,37 +121,91 @@ void AGravityGun::GrabObject() const
 			NAME_None,
 			Hit.GetComponent()->GetCenterOfMass()
 		);
+
+		return true;
 	}
+
+	return false;
 }
 
-void AGravityGun::ReleaseGrabbedObject() const 
+bool AGravityGun::ReleaseGrabbedObject()
 {
-	PhysicsHandle->ReleaseComponent();
+	if(PhysicsHandle->GetGrabbedComponent())
+	{
+		PhysicsHandle->ReleaseComponent();
+		bGrabbedObjectAtGravityCenter = false;
+		PhysicsHandle->bInterpolateTarget = true;
+
+		return true;
+	}
+	
+	return false;
 }
 
-void AGravityGun::PushObject() const 
+bool AGravityGun::PushObject() const 
 {
 	FHitResult Hit;
-	bool bHitSomething = FindClosestObjectInReach(Hit);
+	const bool bHitSomething = FindClosestObjectInReach(Hit);
 
 	if (bHitSomething && Hit.GetComponent() && Hit.GetComponent()->IsSimulatingPhysics())
 	{
-		float Distance = FVector::Distance(GetGravityCenter(), Hit.Location);
-		float PushForce = FMath::Lerp(MinPushForce, MaxPushForce, (MaxReachDistance - Distance) / MaxReachDistance);
-		Hit.GetComponent()->AddImpulseAtLocation(GetMuzzleRotation().Vector() * PushForce, Hit.Location);
+		FVector Location, Direction;
+		GetGravityCenterAndDirection(Location, Direction);
+
+		const float Distance = FVector::Distance(Location, Hit.Location);
+		const float PushForce = FMath::Lerp(MinPushForce, MaxPushForce, (MaxReachDistance - Distance) / MaxReachDistance);
+		Hit.GetComponent()->AddImpulseAtLocation(Direction * PushForce, Hit.Location);
+
+		return true;
 	}
+
+	return false;
 }
 
-void AGravityGun::PullGrabbedObject() const
+bool AGravityGun::PushGrabbedObject()
 {
-	if (!PhysicsHandle) return;
-	if (PhysicsHandle->GetGrabbedComponent())
+	if(PhysicsHandle && PhysicsHandle->GetGrabbedComponent())
 	{
-		float Distance = FVector::Distance(GetGravityCenter(), PhysicsHandle->GetGrabbedComponent()->GetComponentLocation());
-		float PullSpeed = FMath::Lerp(MinPullSpeed, MaxPullSpeed, (MaxReachDistance - Distance) / MaxReachDistance);
-		PhysicsHandle->SetInterpolationSpeed(PullSpeed);
+		FVector Location, Direction;
+		GetGravityCenterAndDirection(Location, Direction);
 
-		float ComponentRadius = PhysicsHandle->GetGrabbedComponent()->Bounds.SphereRadius;
-		PhysicsHandle->SetTargetLocation(GetGravityCenter() + GetMuzzleRotation().Vector() * ComponentRadius);
+		const float Distance = FVector::Distance(Location, PhysicsHandle->GetGrabbedComponent()->GetCenterOfMass());
+		const float PushForce = FMath::Lerp(MinPushForce, MaxPushForce, (MaxReachDistance - Distance) / MaxReachDistance);
+		PhysicsHandle->GetGrabbedComponent()->AddImpulseAtLocation(Direction * PushForce, PhysicsHandle->GetGrabbedComponent()->GetCenterOfMass());
+		ReleaseGrabbedObject();
+
+		return true;
 	}
+
+	return false;
+}
+
+bool AGravityGun::PullGrabbedObject()
+{
+	if (PhysicsHandle && PhysicsHandle->GetGrabbedComponent())
+	{
+		FVector Location, Direction;
+		GetGravityCenterAndDirection(Location, Direction);
+		const float ComponentRadius = PhysicsHandle->GetGrabbedComponent()->Bounds.SphereRadius;
+		
+		if(!bGrabbedObjectAtGravityCenter)
+		{
+			const float Distance = FVector::Distance(Location + Direction * ComponentRadius, PhysicsHandle->GetGrabbedComponent()->GetCenterOfMass());
+			const float PullSpeed = FMath::Lerp(MinPullSpeed, MaxPullSpeed, (MaxReachDistance - Distance) / MaxReachDistance);
+			PhysicsHandle->SetInterpolationSpeed(PullSpeed);
+
+			static constexpr float DISTANCE_TO_STOP_INTERPOLATION = 5.f;
+			if (Distance < DISTANCE_TO_STOP_INTERPOLATION)
+			{
+				PhysicsHandle->bInterpolateTarget = false;
+				bGrabbedObjectAtGravityCenter = true;
+			}
+		}
+		
+		PhysicsHandle->SetTargetLocation(Location + Direction * ComponentRadius);
+		
+		return true;
+	}
+
+	return false;
 }

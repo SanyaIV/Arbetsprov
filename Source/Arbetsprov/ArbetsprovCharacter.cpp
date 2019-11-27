@@ -7,6 +7,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
+#include "Engine/World.h"
 #include "GameFramework/InputSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "Weapons/Gun.h"
@@ -46,17 +47,10 @@ void AArbetsprovCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
-	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	const APlayerController* PlayerController = Cast<APlayerController>(GetController());
 	if(PlayerController)
 	{
 		FP_HUD = Cast<AArbetsprovHUD>(PlayerController->GetHUD());
-	}
-
-	FP_Gun = GetWorld()->SpawnActor<AGun>(GunBlueprint);
-	if(FP_Gun)
-	{
-		FP_Gun->AttachToComponent(FP_Arms, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GripPoint"));
-		FP_Gun->SetOwner(this);
 	}
 }
 
@@ -64,7 +58,7 @@ void AArbetsprovCharacter::Tick(float DeltaTime)
 {
 	if(FP_HUD)
 	{
-		FLinearColor Color = FLinearColor::White;
+		FLinearColor Color = DefaultCrosshairColor;
 		if(FP_Gun)
 		{
 			Color = FP_Gun->GetCrosshairColor();
@@ -89,6 +83,8 @@ void AArbetsprovCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	// Bind weapon events
 	PlayerInputComponent->BindAction("WeaponPrimary", IE_Pressed, this, &AArbetsprovCharacter::OnWeaponPrimary);
 	PlayerInputComponent->BindAction("WeaponSecondary", IE_Pressed, this, &AArbetsprovCharacter::OnWeaponSecondary);
+	PlayerInputComponent->BindAction("PickUp", IE_Pressed, this, &AArbetsprovCharacter::PickUpGun);
+	PlayerInputComponent->BindAction("Drop", IE_Pressed, this, &AArbetsprovCharacter::DropGun);
 
 	// Bind movement events
 	PlayerInputComponent->BindAxis("MoveForward", this, &AArbetsprovCharacter::MoveForward);
@@ -107,10 +103,11 @@ void AArbetsprovCharacter::OnWeaponPrimary()
 {
 	if (!FP_Gun) return;
 	
-	FP_Gun->PrimaryAction();
+	const bool bSuccess = FP_Gun->PrimaryAction();
 
+	// TODO: Refactor animations, should probably be decided by the gun instance?
 	// try and play a firing animation if specified
-	if (FireAnimation != nullptr)
+	if (bSuccess && FireAnimation != nullptr)
 	{
 		// Get the animation object for the arms mesh
 		UAnimInstance* AnimInstance = FP_Arms->GetAnimInstance();
@@ -125,10 +122,11 @@ void AArbetsprovCharacter::OnWeaponSecondary()
 {
 	if (!FP_Gun) return;
 	
-	FP_Gun->SecondaryAction();
+	const bool bSuccess = FP_Gun->SecondaryAction();
 
+	// TODO: Refactor animations, should probably be decided by the gun instance?
 	// try and play a firing animation if specified
-	if (FireAnimation != nullptr)
+	if (bSuccess && FireAnimation != nullptr)
 	{
 		// Get the animation object for the arms mesh
 		UAnimInstance* AnimInstance = FP_Arms->GetAnimInstance();
@@ -136,6 +134,43 @@ void AArbetsprovCharacter::OnWeaponSecondary()
 		{
 			AnimInstance->Montage_Play(FireAnimation, 1.f);
 		}
+	}
+}
+
+void AArbetsprovCharacter::PickUpGun()
+{
+	FHitResult Hit;
+	if(LineTraceSingleByChannelFromEyes(Hit, PickUpDistance, ECollisionChannel::ECC_Visibility))
+	{
+		AGun* Gun = Cast<AGun>(Hit.GetActor());
+		if(Gun)
+		{
+			PickUpGun(Gun);
+		}
+	}
+}
+
+void AArbetsprovCharacter::PickUpGun(AGun* Gun)
+{
+	if(Gun)
+	{
+		// If the player already has a gun, drop it. Assumes the player can only have one gun at a time.
+		if(FP_Gun)
+		{
+			DropGun();
+		}
+
+		FP_Gun = Gun->PickUp(this);
+		FP_Gun->AttachToComponent(FP_Arms, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GripPoint"));
+	}
+}
+
+void AArbetsprovCharacter::DropGun()
+{
+	if(FP_Gun)
+	{
+		FP_Gun->Drop();
+		FP_Gun = nullptr; // Assumes the player doesn't have any other guns than the one dropped.
 	}
 }
 
@@ -167,4 +202,23 @@ void AArbetsprovCharacter::LookUpAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+}
+
+bool AArbetsprovCharacter::LineTraceSingleByChannelFromEyes(FHitResult& OutHit, float DistanceToCheck, ECollisionChannel TraceChannel) const
+{
+	const APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+	int32 ViewportSizeX, ViewportSizeY;
+	PlayerController->GetViewportSize(ViewportSizeX, ViewportSizeY);
+
+	FVector WorldLocation, WorldDirection;
+	PlayerController->DeprojectScreenPositionToWorld(ViewportSizeX * 0.5f, ViewportSizeY * 0.5f, WorldLocation, WorldDirection);
+
+	return GetWorld()->LineTraceSingleByChannel(
+		OutHit,
+		WorldLocation,
+		WorldLocation + WorldDirection * DistanceToCheck,
+		TraceChannel,
+		FCollisionQueryParams(FName(TEXT("")), false, GetOwner())
+	);
 }
