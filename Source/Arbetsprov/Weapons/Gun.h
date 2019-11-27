@@ -6,6 +6,15 @@
 #include "GameFramework/Actor.h"
 #include "Gun.generated.h"
 
+UENUM()
+enum class EGunState : uint8
+{
+	NoTarget,
+	Target,
+	Reloading,
+	OutOfAmmo
+};
+
 /** Class representing a gun. Gun-like weapons inherit from this class. */
 UCLASS()
 class ARBETSPROV_API AGun : public AActor
@@ -22,6 +31,12 @@ public:
 	/** Method representing the secondary action of the gun e.g. toggling semi/automatic. */
 	UFUNCTION(BlueprintCallable, Category = "Actions")
 	virtual void SecondaryAction();
+
+	UFUNCTION(BlueprintCallable, Category = "State")
+	EGunState GetGunState() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Crosshair")
+	FLinearColor GetCrosshairColor() const;
 
 protected:
 	/**
@@ -47,6 +62,9 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Muzzle")
 	FRotator GetMuzzleRotation() const;
 
+	UFUNCTION(BlueprintCallable, Category = "State")
+	void SetGunState(EGunState State);
+
 private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "Mesh")
 	USkeletalMeshComponent* WeaponMesh = nullptr;
@@ -55,4 +73,9 @@ private:
 	class USoundBase* PrimaryActionSound;
 	UPROPERTY(EditDefaultsOnly, Category = Gameplay)
 	class USoundBase* SecondaryActionSound;
+
+	EGunState GunState = EGunState::NoTarget;
+
+	UPROPERTY(EditDefaultsOnly, Category = "HUD")
+	TMap<EGunState, FLinearColor> CrosshairColorsByState;
 };

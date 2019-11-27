@@ -18,6 +18,16 @@ AGravityGun::AGravityGun(const FObjectInitializer& ObjectInitializer) : Super(Ob
 
 void AGravityGun::Tick(float DeltaTime)
 {
+	FHitResult Hit;
+	if(FindClosestObjectInReach(Hit) && Hit.GetComponent()->IsSimulatingPhysics())
+	{
+		SetGunState(EGunState::Target);
+	}
+	else
+	{
+		SetGunState(EGunState::NoTarget);
+	}
+
 	PullGrabbedObject();
 }
 

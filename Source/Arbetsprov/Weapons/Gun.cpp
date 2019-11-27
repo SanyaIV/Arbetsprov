@@ -59,3 +59,18 @@ FRotator AGun::GetMuzzleRotation() const
 
 	return FRotator::ZeroRotator;
 }
+
+void AGun::SetGunState(EGunState State)
+{
+	GunState = State;
+}
+
+EGunState AGun::GetGunState() const
+{
+	return GunState;
+}
+
+FLinearColor AGun::GetCrosshairColor() const
+{
+	return CrosshairColorsByState.FindRef(GunState);
+}

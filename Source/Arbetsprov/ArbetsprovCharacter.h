@@ -16,6 +16,9 @@ class AArbetsprovCharacter : public ACharacter
 public:
 	AArbetsprovCharacter();
 
+	/** Tick function. */
+	virtual void Tick(float DeltaTime) override;
+
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	float BaseTurnRate;
@@ -69,12 +72,15 @@ private:
 	TSubclassOf<class AGun> GunBlueprint;
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "Mesh")
-	class USkeletalMeshComponent* FP_Arms;
+	class USkeletalMeshComponent* FP_Arms = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* FP_Camera;
+	class UCameraComponent* FP_Camera = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess = "True"))
-	class AGun* FP_Gun;
+	class AGun* FP_Gun = nullptr;
+
+	UPROPERTY()
+	class AArbetsprovHUD* FP_HUD = nullptr;
 };
 

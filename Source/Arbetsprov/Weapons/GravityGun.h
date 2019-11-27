@@ -64,15 +64,15 @@ private:
 	class UPhysicsHandleComponent* PhysicsHandle = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
-	float MaxReachDistance = 2000.f;
+	float MaxReachDistance = 2500.f;
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
 	float MinPushForce = 0.f;
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
 	float MaxPushForce = 750000.f;
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
-	float MinPullSpeed = 1.f;
+	float MinPullSpeed = 0.1f;
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
-	float MaxPullSpeed = 50.f;
+	float MaxPullSpeed = 15.f;
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
 	float MuzzleOffset = 50.f;
 

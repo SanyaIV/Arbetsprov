@@ -2,6 +2,7 @@
 
 #include "ArbetsprovCharacter.h"
 #include "ArbetsprovProjectile.h"
+#include "ArbetsprovHUD.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -45,11 +46,31 @@ void AArbetsprovCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if(PlayerController)
+	{
+		FP_HUD = Cast<AArbetsprovHUD>(PlayerController->GetHUD());
+	}
+
 	FP_Gun = GetWorld()->SpawnActor<AGun>(GunBlueprint);
 	if(FP_Gun)
 	{
 		FP_Gun->AttachToComponent(FP_Arms, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GripPoint"));
 		FP_Gun->SetOwner(this);
+	}
+}
+
+void AArbetsprovCharacter::Tick(float DeltaTime)
+{
+	if(FP_HUD)
+	{
+		FLinearColor Color = FLinearColor::White;
+		if(FP_Gun)
+		{
+			Color = FP_Gun->GetCrosshairColor();
+		}
+
+		FP_HUD->SetCrosshairColor(Color);
 	}
 }
 

@@ -14,7 +14,6 @@ AArbetsprovHUD::AArbetsprovHUD()
 	CrosshairTex = CrosshairTexObj.Object;
 }
 
-
 void AArbetsprovHUD::DrawHUD()
 {
 	Super::DrawHUD();
@@ -29,7 +28,12 @@ void AArbetsprovHUD::DrawHUD()
 										   (Center.Y - CrosshairTex->GetImportedSize().Y / 2.f));
 
 	// draw the crosshair
-	FCanvasTileItem TileItem( CrosshairDrawPosition, CrosshairTex->Resource, FLinearColor::White);
+	FCanvasTileItem TileItem( CrosshairDrawPosition, CrosshairTex->Resource, CrosshairColor);
 	TileItem.BlendMode = SE_BLEND_Translucent;
 	Canvas->DrawItem( TileItem );
+}
+
+void AArbetsprovHUD::SetCrosshairColor(FLinearColor Color)
+{
+	CrosshairColor = Color;
 }

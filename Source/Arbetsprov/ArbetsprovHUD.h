@@ -17,9 +17,14 @@ public:
 	/** Primary draw call for the HUD */
 	virtual void DrawHUD() override;
 
+	/** Set the color of the crosshair */
+	void SetCrosshairColor(FLinearColor Color);
+
 private:
 	/** Crosshair asset pointer */
 	class UTexture2D* CrosshairTex;
 
-};
+	/** Color for the crosshair */
+	FLinearColor CrosshairColor = FLinearColor::White;
 
+};
