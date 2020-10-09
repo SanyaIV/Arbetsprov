@@ -29,7 +29,7 @@ AArbetsprovCharacter::AArbetsprovCharacter()
 	// Create a CameraComponent	
 	FP_Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("FP_Camera"));
 	FP_Camera->SetupAttachment(GetCapsuleComponent());
-	FP_Camera->RelativeLocation = FVector(-39.56f, 1.75f, 64.f); // Position the camera
+	FP_Camera->SetRelativeLocation(FVector(-39.56f, 1.75f, 64.f));
 	FP_Camera->bUsePawnControlRotation = true;
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
@@ -38,8 +38,8 @@ AArbetsprovCharacter::AArbetsprovCharacter()
 	FP_Arms->SetupAttachment(FP_Camera);
 	FP_Arms->bCastDynamicShadow = false;
 	FP_Arms->CastShadow = false;
-	FP_Arms->RelativeRotation = FRotator(1.9f, -19.19f, 5.2f);
-	FP_Arms->RelativeLocation = FVector(-0.5f, -4.4f, -155.7f);
+	FP_Arms->SetRelativeRotation(FRotator(1.9f, -19.19f, 5.2f));
+	FP_Arms->SetRelativeLocation(FVector(-0.5f, -4.4f, -155.7f));
 }
 
 void AArbetsprovCharacter::BeginPlay()
